@@ -1,0 +1,81 @@
+import pprint
+import random
+from nltk.corpus import brown
+import nltk
+import datetime
+
+WRITEFILE = "obradjeno.txt"
+FILEPATH = "C:\\Users\\emilija.ivanovic\\Desktop\Diplomski\\tekstovi\\stara-grcka.txt"
+NGRAM_LENGTH = 6
+
+now = datetime.datetime.now()
+
+class MarkovChain:
+    def __init__(self):
+        self.memory = {}
+
+    def _learn_key(self, key, value):
+        if key not in self.memory:
+            self.memory[key] = []
+        if value not in self.memory[key]:
+            self.memory[key].append(value)
+
+    def learn(self, tokens, n):
+        ngrams = [tuple(tokens[i:(i + n)]) for i in range(0, len(tokens) - n + 1)]
+        pprint.pprint(ngrams)
+        # for ngram in ngrams:
+        #     for i in range(1, n - 1):
+        #         value = ""
+        #         for j in range(0, i + 1):
+        #             value += ngram[j] + " "
+        #         value = value.strip(' ')
+        #         self._learn_key(value, ngram[i + 1])
+
+    def learn_from_file(self, path):
+        with open(path, 'r') as f:
+            text = f.read()
+            tokens = text.split(" ")
+            self.learn(tokens, NGRAM_LENGTH)
+
+    def learn_from_book(self):
+        tokens = brown.words(categories='humor')
+        self.learn(tokens, NGRAM_LENGTH)
+
+    def _next(self, current_state):
+        next_possible = self.memory.get(current_state)
+        if not next_possible:
+            next_possible = self.memory.keys()
+        return random.sample(next_possible, 1)
+
+    def babble(self, amount, state=''):
+        if amount == 0:
+            return state
+        next_word = self._next(state)
+        if not next_word:
+            return state
+        return state + ' ' + self.babble(amount - 1, next_word[0])
+
+    @staticmethod
+    def write_to_file(text):
+        with open("C:\\Users\\emilija.ivanovic\\Desktop\Diplomski\\tekstovi\\babble-results.txt", "a") as f:
+            f.write("%d.%d.%d %d:%d %s \n" % (now.day,now.month,now.year,now.hour, now.minute, text))
+
+    @staticmethod
+    def read_from_file(path):
+        text = ""
+        with open(path, "a") as f:
+            text = f.read()
+        return text
+
+
+    @staticmethod
+    def book_to_file():
+        sents = nltk.Text(brown.words(categories='humor'))
+        with open("humor-sents.txt", "w") as f:
+            f.write(str(sents))
+
+
+if __name__ == '__main__':
+    m = MarkovChain()
+    m.learn_from_file(FILEPATH)
+    pprint.pprint(m.memory)
